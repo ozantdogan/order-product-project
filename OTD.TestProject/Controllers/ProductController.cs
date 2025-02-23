@@ -20,9 +20,9 @@ namespace OTD.Api.Controllers
         }
 
         [HttpGet("GetProducts")]
-        public async Task<ActionResult<ApiResponse<List<ProductDto>>>> GetProducts([FromQuery] int? category)
+        public async Task<ActionResult<ApiResponse<List<ProductDto>>>> GetProducts([FromQuery] ProductSearchRequest request)
         {
-            var response = await _service.List(new ProductSearchRequest() { Category = category });
+            var response = await _service.List(request);
             return Ok(response);
         }
     }

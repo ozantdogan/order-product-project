@@ -1,23 +1,18 @@
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
-using OTD.ServiceLayer.Abstract;
-using OTD.ServiceLayer.Concrete;
+using OTD.Core;
+using OTD.Repository;
 using OTD.Repository.Abstract;
 using OTD.Repository.Concrete;
-using System.Text;
-using OTD.Repository;
-using OTD.Core;
-using StackExchange.Redis;
+using OTD.ServiceLayer.Abstract;
 using OTD.ServiceLayer.Caching;
+using OTD.ServiceLayer.Concrete;
+using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 var config = builder.Configuration;
 
 // Add services to the container.
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
