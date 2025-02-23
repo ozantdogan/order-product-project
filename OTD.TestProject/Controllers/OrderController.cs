@@ -3,6 +3,7 @@ using OTD.ServiceLayer.Concrete;
 using OTD.Core.Models.Requests;
 using OTD.Core.Models.Responses;
 using OTD.Repository.Abstract;
+using OTD.ServiceLayer.Abstract;
 
 namespace OTD.Api.Controllers
 {
@@ -11,9 +12,10 @@ namespace OTD.Api.Controllers
     public class OrderController : ControllerBase
     {
         private readonly OrderService _service;
-        public OrderController(IOrderRepository orderRepository, IOrderDetailRepository orderDetailRepository)
+
+        public OrderController(IOrderRepository orderRepository, IOrderDetailRepository orderDetailRepository, IRabbitMqService rabbitMqService)
         {
-            _service = new OrderService(orderRepository, orderDetailRepository);
+            _service = new OrderService(orderRepository, orderDetailRepository, rabbitMqService);
         }
 
         [HttpPost("CreateOrder")]

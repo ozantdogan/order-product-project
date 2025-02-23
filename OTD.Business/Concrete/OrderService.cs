@@ -11,11 +11,13 @@ namespace OTD.ServiceLayer.Concrete
     {
         private readonly IOrderRepository _repository;
         private readonly IOrderDetailRepository _orderDetailRepository;
+        private readonly IRabbitMqService _rabbitMqService;
 
-        public OrderService(IOrderRepository repository, IOrderDetailRepository orderDetailRepository)
+        public OrderService(IOrderRepository repository, IOrderDetailRepository orderDetailRepository, IRabbitMqService rabbitMqService)
         {
             _repository = repository;
             _orderDetailRepository = orderDetailRepository;
+            _rabbitMqService = rabbitMqService;
         }
 
         public async Task<ApiResponse> Add(CreateOrderRequest request)
@@ -53,9 +55,16 @@ namespace OTD.ServiceLayer.Concrete
             await _repository.Add(order);
             await _orderDetailRepository.AddRange(orderDetails);
 
-            return GenerateResponse(true, ErrorCode.Success, request);
+            var mailRequest = new MailRequest
+            {
+                To = order.CustomerEmail,
+                Subject = "Order Confirmation",
+                Body = $"Dear {order.CustomerName}, your order has been successfully created."
+            };
 
-            //TODO: MAIL
+            _rabbitMqService.Publish("SendMail", mailRequest);
+
+            return GenerateResponse(true, ErrorCode.Success, request);
         }
     }
 }
