@@ -1,4 +1,5 @@
-﻿using OTD.ServiceLayer.Abstract;
+﻿using Microsoft.Extensions.Configuration;
+using OTD.ServiceLayer.Abstract;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System.Text;
@@ -12,13 +13,13 @@ namespace OTD.ServiceLayer.Concrete
         private readonly IConnection _connection;
         private readonly IModel _channel;
 
-        public RabbitMqService()
+        public RabbitMqService(IConfiguration configuration)
         {
             var factory = new ConnectionFactory
             {
-                HostName = "localhost",  // RabbitMQ Sunucu Adı
-                UserName = "guest",
-                Password = "guest"
+                HostName = configuration["RabbitMQ:HostName"],
+                UserName = configuration["RabbitMQ:UserName"],
+                Password = configuration["RabbitMQ:Password"]
             };
 
             _connection = factory.CreateConnection();
