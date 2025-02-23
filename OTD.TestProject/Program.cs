@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using OTD.Core;
+using OTD.Extensions;
 using OTD.Repository;
 using OTD.Repository.Abstract;
 using OTD.Repository.Concrete;
@@ -24,10 +25,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddTransient<DbContext, ApplicationDbContext>();
-builder.Services.AddTransient<IOrderRepository, OrderRepository>();
-builder.Services.AddTransient<IProductRepository, ProductRepository>();
-builder.Services.AddTransient<IOrderDetailRepository, OrderDetailRepository>();
+builder.Services.RegisterRepositories();
 builder.Services.AddScoped(typeof(IBaseRepository<>), typeof(BaseRepository<>));
 builder.Services.AddAutoMapper(typeof(MappingProfile));
 builder.Services.AddSingleton<IMailService, MailService>();

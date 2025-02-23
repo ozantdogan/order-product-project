@@ -6,7 +6,7 @@ namespace OTD.Repository.Concrete
 {
     public class OrderRepository : BaseRepository<Order>, IOrderRepository
     {
-        public OrderRepository(DbContext dbContext) : base(dbContext)
+        public OrderRepository(ApplicationDbContext dbContext) : base(dbContext)
         {
 
         }
