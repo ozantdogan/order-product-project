@@ -3,13 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.7.34202.233
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OTD.Api", "OTD.TestProject\OTD.Api.csproj", "{0E30784C-3C56-439C-AB74-5D6864C5824E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OTD.Api", "OTD.Api\OTD.Api.csproj", "{0E30784C-3C56-439C-AB74-5D6864C5824E}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OTD.Core", "OTD.Core\OTD.Core.csproj", "{76AF1461-3131-4F84-A50D-800435C5E2E3}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OTD.Repository", "OTD.Repository\OTD.Repository.csproj", "{085038C8-C27B-4BB4-9A60-3FB1A10C0A64}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OTD.ServiceLayer", "OTD.Business\OTD.ServiceLayer.csproj", "{81B101A5-38C2-4442-9CAC-6A8C0C7C3ADF}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OTD.ServiceLayer", "OTD.ServiceLayer\OTD.ServiceLayer.csproj", "{81B101A5-38C2-4442-9CAC-6A8C0C7C3ADF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -31,7 +31,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\OTD.Business\OTD.ServiceLayer.csproj" />
+    <ProjectReference Include="..\OTD.ServiceLayer\OTD.ServiceLayer.csproj" />
     <ProjectReference Include="..\OTD.Repository\OTD.Repository.csproj" />
   </ItemGroup>
 
