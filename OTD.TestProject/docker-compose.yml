@@ -1,5 +1,43 @@
+version: '3.8'
+
 services:
-    redis:
-        image: redis
-        ports:
-        - "6379:6379"
+  app:
+    build: .
+    container_name: my_app
+    restart: always
+    depends_on:
+      - redis
+      - rabbitmq
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+    networks:
+      - my_network
+
+  redis:
+    image: redis:latest
+    container_name: my_redis
+    restart: always
+    ports:
+      - "6379:6379"
+    networks:
+      - my_network
+
+  rabbitmq:
+    image: rabbitmq:management
+    container_name: my_rabbitmq
+    restart: always
+    ports:
+      - "5672:5672"  
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    networks:
+      - my_network
+
+networks:
+  my_network:
+    driver: bridge
