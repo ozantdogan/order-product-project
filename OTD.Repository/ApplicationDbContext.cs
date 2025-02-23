@@ -17,7 +17,6 @@ namespace OTD.Repository
         {
             base.OnModelCreating(modelBuilder);
 
-            // Apply global filter to exclude entities where DeleteFlag = true
             modelBuilder.Entity<Product>().HasQueryFilter(p => !p.DeleteFlag);
             modelBuilder.Entity<Order>().HasQueryFilter(o => !o.DeleteFlag);
             modelBuilder.Entity<OrderDetail>().HasQueryFilter(od => !od.DeleteFlag);

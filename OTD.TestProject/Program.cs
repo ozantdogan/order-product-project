@@ -18,9 +18,6 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddTransient<DbContext, ApplicationDbContext>();
-builder.Services.AddTransient<IVehicleRepository, VehicleRepository>();
-builder.Services.AddTransient<IAuthBusiness, AuthBusiness>();
-builder.Services.AddTransient<ITokenBusiness, TokenService>();
 builder.Services.AddTransient<IOrderRepository, OrderRepository>();
 builder.Services.AddTransient<IProductRepository, ProductRepository>();
 builder.Services.AddTransient<IOrderDetailRepository, OrderDetailRepository>();
