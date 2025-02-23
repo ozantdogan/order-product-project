@@ -7,7 +7,7 @@ using OTD.Repository.Abstract;
 
 namespace OTD.ServiceLayer.Concrete
 {
-    public class OrderService : BaseService
+    public class OrderService : BaseService, IOrderService
     {
         private readonly IOrderRepository _repository;
         private readonly IOrderDetailRepository _orderDetailRepository;

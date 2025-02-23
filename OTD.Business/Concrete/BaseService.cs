@@ -1,11 +1,12 @@
 ﻿using OTD.ServiceLayer.Helper;
 using OTD.Core.Models.Responses;
+using OTD.ServiceLayer.Abstract;
 
-namespace OTD.ServiceLayer.Abstract
+namespace OTD.ServiceLayer.Concrete
 {
-    public class BaseService
+    public class BaseService : IBaseService
     {
-        internal ApiResponse<T> GenerateResponse<T>(bool success, ErrorCode code, T? data)
+        public ApiResponse<T> GenerateResponse<T>(bool success, ErrorCode code, T? data)
         {
             return new ApiResponse<T>
             {

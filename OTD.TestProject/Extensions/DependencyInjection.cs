@@ -1,26 +1,35 @@
 ﻿using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
-using OTD.Repository.Abstract;
 
 namespace OTD.Extensions
 {
     public static class DependencyInjection
     {
-        public static void RegisterRepositories(this IServiceCollection services)
+        public static IServiceCollection AutoRegisterDependencies(this IServiceCollection services)
         {
-            var assembly = typeof(IProductRepository).Assembly;
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
 
-            var types = assembly.GetTypes()
-                .Where(t => t.IsClass && !t.IsAbstract && t.Name.EndsWith("Repository"));
+            RegisterImplementations(services, assemblies, "Repository");
+            RegisterImplementations(services, assemblies, "Service");
 
-            foreach (var implType in types)
+            return services;
+        }
+
+        private static void RegisterImplementations(IServiceCollection services, Assembly[] assemblies, string suffix)
+        {
+            foreach (var assembly in assemblies)
             {
-                var interfaceType = implType.GetInterfaces()
-                    .FirstOrDefault(i => i.Name == "I" + implType.Name);
+                var types = assembly.GetTypes();
 
-                if (interfaceType != null)
+                foreach (var interfaceType in types.Where(t => t.IsInterface && t.Name.EndsWith(suffix)))
                 {
-                    services.AddTransient(interfaceType, implType);
+                    var implementationType = types.FirstOrDefault(t =>
+                        t.IsClass && !t.IsAbstract && interfaceType.IsAssignableFrom(t));
+
+                    if (implementationType != null)
+                    {
+                        services.AddScoped(interfaceType, implementationType);
+                    }
                 }
             }
         }

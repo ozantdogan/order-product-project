@@ -10,7 +10,7 @@ using System.Text.Json;
 
 namespace OTD.ServiceLayer.Concrete
 {
-    public class ProductService : BaseService
+    public class ProductService : BaseService, IProductService
     {
         private readonly IProductRepository _repository;
         private readonly IMapper _mapper;

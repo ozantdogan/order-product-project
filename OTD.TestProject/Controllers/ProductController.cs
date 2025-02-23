@@ -12,11 +12,11 @@ namespace OTD.Api.Controllers
     [ApiController]
     public class ProductController : ControllerBase
     {
-        private readonly ProductService _service;
+        private readonly IProductService _service;
 
-        public ProductController(IProductRepository repository, IMapper mapper, ICacheService cache)
+        public ProductController(IProductService service)
         {
-            _service = new ProductService(repository, mapper, cache);
+            _service = service;
         }
 
         [HttpGet("GetProducts")]
