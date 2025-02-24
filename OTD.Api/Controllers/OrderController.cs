@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using OTD.Core.Models.Requests;
 using OTD.Core.Models.Responses;
+using OTD.Core.Models.SearchRequests;
 using OTD.ServiceLayer.Abstract;
 
 namespace OTD.Api.Controllers
@@ -20,6 +21,13 @@ namespace OTD.Api.Controllers
         public async Task<ActionResult<ApiResponse>> CreateOrder(CreateOrderRequest request)
         {
             var response = await _service.Add(request);
+            return Ok(response);
+        }
+
+        [HttpGet("GetOrders")]
+        public async Task<ActionResult<ApiResponse>> GetOrders([FromQuery] OrderSearchRequest request)
+        {
+            var response = await _service.List(request);
             return Ok(response);
         }
     }

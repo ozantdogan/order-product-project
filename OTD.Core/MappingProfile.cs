@@ -8,7 +8,8 @@ namespace OTD.Core
     {
         public MappingProfile() 
         { 
-            CreateMap<Product, ProductDto>();
+            CreateMap<Product, ProductResponse>();
+            CreateMap<Order, OrderResponse>();
         }
     }
 }

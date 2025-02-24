@@ -23,16 +23,16 @@ namespace OTD.ServiceLayer.Concrete
             _cache = cache;
         }
 
-        public async Task<ApiResponse<List<ProductDto>>> List(ProductSearchRequest request)
+        public async Task<ApiResponse<List<ProductResponse>>> List(ProductSearchRequest request)
         {
             string cacheKey = $"{nameof(Product)}-{JsonSerializer.Serialize(request)}";
-            var cacheResult = await _cache.GetAsync<List<ProductDto>>(cacheKey);
-            if (cacheResult is List<ProductDto> && cacheResult != null)
+            var cacheResult = await _cache.GetAsync<List<ProductResponse>>(cacheKey);
+            if (cacheResult is List<ProductResponse> && cacheResult != null)
                 return GenerateResponse(true, ErrorCode.Success, cacheResult);
 
             var predicate = GetExpression(request);
             var data = await _repository.List(predicate);
-            var dto = _mapper.Map<List<ProductDto>>(data);
+            var dto = _mapper.Map<List<ProductResponse>>(data);
 
             await _cache.SetCacheAsync(cacheKey, dto, 30);
 

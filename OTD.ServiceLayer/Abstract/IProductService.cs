@@ -5,6 +5,6 @@ namespace OTD.ServiceLayer.Abstract
 {
     public interface IProductService
     {
-        Task<ApiResponse<List<ProductDto>>> List(ProductSearchRequest request);
+        Task<ApiResponse<List<ProductResponse>>> List(ProductSearchRequest request);
     }
 }

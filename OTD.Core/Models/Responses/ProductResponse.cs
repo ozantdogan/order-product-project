@@ -2,7 +2,7 @@
 
 namespace OTD.Core.Models.Responses
 {
-    public class ProductDto
+    public class ProductResponse
     {
         public Guid ProductId { get; set; }
         public string Description { get; set; }

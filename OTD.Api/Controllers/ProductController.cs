@@ -1,10 +1,7 @@
-﻿using AutoMapper;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using OTD.Core.Models.Responses;
 using OTD.Core.Models.SearchRequests;
-using OTD.Repository.Abstract;
 using OTD.ServiceLayer.Abstract;
-using OTD.ServiceLayer.Concrete;
 
 namespace OTD.Api.Controllers
 {
@@ -20,7 +17,7 @@ namespace OTD.Api.Controllers
         }
 
         [HttpGet("GetProducts")]
-        public async Task<ActionResult<ApiResponse<List<ProductDto>>>> GetProducts([FromQuery] ProductSearchRequest request)
+        public async Task<ActionResult<ApiResponse<List<ProductResponse>>>> GetProducts([FromQuery] ProductSearchRequest request)
         {
             var response = await _service.List(request);
             return Ok(response);
