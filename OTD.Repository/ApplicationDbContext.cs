@@ -1,5 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using OTD.Core.Entities;
+using System.Linq.Expressions;
 
 namespace OTD.Repository
 {
@@ -9,17 +9,27 @@ namespace OTD.Repository
         {
         }
 
-        public virtual DbSet<Product> Products { get; set; }
-        public virtual DbSet<Order> Orders { get; set; }
-        public virtual DbSet<OrderDetail> OrderDetails { get; set; }
-
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
-            modelBuilder.Entity<Product>().HasQueryFilter(p => !p.DeleteFlag);
-            modelBuilder.Entity<Order>().HasQueryFilter(o => !o.DeleteFlag);
-            modelBuilder.Entity<OrderDetail>().HasQueryFilter(od => !od.DeleteFlag);
+            // Apply soft delete query filter automatically
+            foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+            {
+                var clrType = entityType.ClrType;
+                var deleteFlagProperty = clrType.GetProperty("DeleteFlag");
+
+                if (deleteFlagProperty != null && deleteFlagProperty.PropertyType == typeof(bool))
+                {
+                    var parameter = Expression.Parameter(clrType, "e");
+                    var filter = Expression.Lambda(
+                        Expression.Not(Expression.Property(parameter, deleteFlagProperty)),
+                        parameter
+                    );
+
+                    modelBuilder.Entity(clrType).HasQueryFilter(filter);
+                }
+            }
         }
     }
 }

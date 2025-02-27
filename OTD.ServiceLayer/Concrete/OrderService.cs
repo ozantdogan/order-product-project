@@ -53,7 +53,7 @@ namespace OTD.ServiceLayer.Concrete
             var existingProductIds = existingProducts.Select(p => p.ProductId).ToHashSet();
             var missingProductIds = requestedProductIds.Where(id => !existingProductIds.Contains(id)).ToList();
             if (missingProductIds.Any())
-                return GenerateResponse(false, ErrorCode.ProductNotFound, missingProductIds);
+                return GenerateResponse(false, ErrorCode.NotFound, missingProductIds);
 
             var orderDetails = new List<OrderDetail>();
             foreach (var product in products)
@@ -112,6 +112,12 @@ namespace OTD.ServiceLayer.Concrete
             if (request.CreatedOnMax.HasValue)
                 predicate = predicate.And(p => p.CreatedOn <= request.CreatedOnMax);
 
+            if (request.TotalAmountMin.HasValue)
+                predicate = predicate.And(p => p.TotalAmount >= request.TotalAmountMin);
+
+            if (request.TotalAmountMax.HasValue)
+                predicate = predicate.And(p => p.TotalAmount <= request.TotalAmountMax);
+
             if (!string.IsNullOrWhiteSpace(request.CustomerGSM))
                 predicate = predicate.And(p => p.CustomerGSM.Contains(request.CustomerGSM));
 
@@ -121,11 +127,6 @@ namespace OTD.ServiceLayer.Concrete
             if (!string.IsNullOrWhiteSpace(request.CustomerEmail))
                 predicate = predicate.And(p => p.CustomerEmail.Contains(request.CustomerEmail));
 
-            if (request.TotalAmountMin.HasValue)
-                predicate = predicate.And(p => p.TotalAmount >= request.TotalAmountMin);
-
-            if (request.TotalAmountMax.HasValue)
-                predicate = predicate.And(p => p.TotalAmount <= request.TotalAmountMax);
 
             return predicate;
         }
