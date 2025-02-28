@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using OTD.Core;
+using OTD.Core.Common;
 using OTD.Extensions;
 using OTD.Repository;
 using OTD.Repository.Abstract;
@@ -99,6 +100,9 @@ builder.Services.AddSwaggerGen(c =>
         }
     });
 });
+
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IUserContext, UserContext>();
 
 var app = builder.Build();
 

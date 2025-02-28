@@ -21,6 +21,9 @@ namespace OTD.Core.Entities
         [StringLength(320)]
         public string Email { get; set; }
 
+        [StringLength(15)]
+        public string Phone { get; set; }
+
         public DateTime? LastLoginDate { get; set; }
 
         [Required]

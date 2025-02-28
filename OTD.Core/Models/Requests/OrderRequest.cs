@@ -5,9 +5,6 @@ namespace OTD.Core.Models.Requests
 {
     public class CreateOrderRequest
     {
-        public string CustomerName { get; set; } = string.Empty;
-        public string CustomerEmail { get; set; } = string.Empty;
-        public string CustomerGSM { get; set; } = string.Empty;
 
         [Required] 
         public List<ProductDetail> ProductDetails { get; set; }

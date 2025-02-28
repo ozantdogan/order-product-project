@@ -8,6 +8,7 @@ using OTD.Core.Models.SearchRequests;
 using AutoMapper;
 using System.Text.Json;
 using System.Linq.Expressions;
+using OTD.Core.Common;
 
 namespace OTD.ServiceLayer.Concrete
 {
@@ -19,13 +20,15 @@ namespace OTD.ServiceLayer.Concrete
         private readonly IRabbitMqService _rabbitMqService;
         private readonly IMapper _mapper;
         private readonly ICacheService _cache;
+        private readonly IUserContext _user;
 
         public OrderService(IOrderRepository repository, 
             IOrderDetailRepository orderDetailRepository, 
             IProductRepository productRepository, 
             IRabbitMqService rabbitMqService, 
             IMapper mapper,
-            ICacheService cache)
+            ICacheService cache,
+            IUserContext user)
         {
             _repository = repository;
             _orderDetailRepository = orderDetailRepository;
@@ -33,6 +36,7 @@ namespace OTD.ServiceLayer.Concrete
             _rabbitMqService = rabbitMqService;
             _mapper = mapper;
             _cache = cache;
+            _user = user;
         }
 
         public async Task<ApiResponse> Add(CreateOrderRequest request)
@@ -40,9 +44,10 @@ namespace OTD.ServiceLayer.Concrete
             var order = new Order()
             {
                 OrderId = Guid.NewGuid(),
-                CustomerName = request.CustomerName,
-                CustomerEmail = request.CustomerEmail,
-                CustomerGSM = request.CustomerGSM
+                CustomerName = _user.DisplayName,
+                CustomerEmail = _user.Email,
+                CreatedOn = DateTime.UtcNow,
+                CreatedBy = _user.UserId
             };
 
             var totalAmount = 0;
@@ -62,7 +67,9 @@ namespace OTD.ServiceLayer.Concrete
                 {
                     OrderId = order.OrderId,
                     ProductId = product.ProductId,
-                    UnitPrice = product.UnitPrice
+                    UnitPrice = product.UnitPrice,
+                    CreatedOn = DateTime.UtcNow,
+                    CreatedBy = _user.UserId
                 };
 
                 totalAmount += product.Amount;

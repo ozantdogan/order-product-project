@@ -104,9 +104,12 @@ namespace OTD.ServiceLayer.Concrete
 
         public async Task<ApiResponse> Login(LoginRequest request)
         {
-            var user = await _cache.GetAsync<User>($"{nameof(User)}-{request.Email}");
-            if (user == null)
+            var cacheResult = await _cache.GetAsync<User>($"{nameof(User)}-{request.Email}");
+            var user = new User();
+            if (cacheResult == null)
                 user = (await _repository.List(p => p.Email == request.Email)).FirstOrDefault();
+            else
+                user = cacheResult;
 
             if (user == null)
                 return GenerateResponse<ApiResponse>(false, ErrorCode.EmailOrPasswordNotCorrect, null);
@@ -120,8 +123,12 @@ namespace OTD.ServiceLayer.Concrete
             var accessToken = GenerateJwtToken(user);
             var refreshToken = GenerateRefreshToken();
 
-            var cacheKey = $"{nameof(User)}-{user.Email}";
-            await _cache.SetCacheAsync(cacheKey, user, 60);
+            if (cacheResult == null)
+            {
+                var cacheKey = $"{nameof(User)}-{user.Email}";
+                await _cache.SetCacheAsync(cacheKey, user, 60);
+            }
+
             await _cache.SetCacheAsync($"refresh-token:{refreshToken}", user.UserId, 7);
 
             var response = new LoginResponse()
@@ -220,21 +227,29 @@ namespace OTD.ServiceLayer.Concrete
             var tokenHandler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
             var secretKey = _configuration["JwtSettings:SecretKey"];
             var key = System.Text.Encoding.UTF8.GetBytes(secretKey ?? "YOUR-VERY-SECURE-SECRET-KEY");
+
+            var claims = new List<System.Security.Claims.Claim>
+            {
+                new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.NameIdentifier, user.UserId.ToString()),
+                new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Email, user.Email),
+                new System.Security.Claims.Claim("first_name", user.FirstName),
+                new System.Security.Claims.Claim("last_name", user.LastName),
+                new System.Security.Claims.Claim("display_name", user.DisplayName),
+            };
+
             var tokenDescriptor = new Microsoft.IdentityModel.Tokens.SecurityTokenDescriptor
             {
-                Subject = new System.Security.Claims.ClaimsIdentity(new[]
-                {
-                    new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.NameIdentifier, user.UserId.ToString()),
-                    new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, user.Email)
-                }),
+                Subject = new System.Security.Claims.ClaimsIdentity(claims),
                 Expires = DateTime.UtcNow.AddHours(1),
                 SigningCredentials = new Microsoft.IdentityModel.Tokens.SigningCredentials(
                     new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(key),
                     Microsoft.IdentityModel.Tokens.SecurityAlgorithms.HmacSha256Signature)
             };
+
             var token = tokenHandler.CreateToken(tokenDescriptor);
             return tokenHandler.WriteToken(token);
         }
+
 
         private void CreatePasswordHash(string password, out byte[] passwordHash, out byte[] passwordSalt)
         {
