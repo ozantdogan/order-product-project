@@ -8,20 +8,21 @@ using OTD.Core.Models.Responses;
 using OTD.Repository.Abstract;
 using OTD.ServiceLayer.Abstract;
 using OTD.ServiceLayer.Helper;
+using StackExchange.Redis;
 
 namespace OTD.ServiceLayer.Concrete
 {
     public class UserService : BaseService, IUserService
     {
         private readonly IUserRepository _repository;
-        private readonly IMailService _mailService;
+        private readonly IRabbitMqService _rabbitMqService;
         private readonly IConfiguration _configuration;
         private readonly IMapper _mapper;
 
-        public UserService(IUserRepository repository, IMailService mailService, IConfiguration configuration, IMapper mapper)
+        public UserService(IUserRepository repository, IRabbitMqService rabbitMqService, IConfiguration configuration, IMapper mapper)
         {
             _repository = repository;
-            _mailService = mailService;
+            _rabbitMqService = rabbitMqService;
             _configuration = configuration;
             _mapper = mapper;   
         }
@@ -59,7 +60,14 @@ namespace OTD.ServiceLayer.Concrete
 
             var response = _mapper.Map<UserResponse>(user);
 
-            await _mailService.SendEmailAsync(user.Email, "Email Confirmation Code", $"One time password: {otpCode}");
+            var mailRequest = new MailRequest
+            {
+                To = user.Email,
+                Subject = $"Your email confirmation code",
+                Body = $"{otpCode}"
+            };
+
+            _rabbitMqService.Publish("SendMail", mailRequest);
 
             return GenerateResponse(true, ErrorCode.Success, response);
         }
@@ -83,7 +91,9 @@ namespace OTD.ServiceLayer.Concrete
 
             await _repository.Update(user);
 
-            return GenerateResponse(true, ErrorCode.Success, user);
+            var response = _mapper.Map<UserResponse>(user);
+
+            return GenerateResponse(true, ErrorCode.Success, response);
         }
 
         public async Task<ApiResponse> Login(LoginRequest request)
@@ -138,7 +148,15 @@ namespace OTD.ServiceLayer.Concrete
             user.EmailConfirmationExpireDate = DateTime.UtcNow.AddMinutes(10);
 
             await _repository.Update(user);
-            await _mailService.SendEmailAsync(user.Email, "Resend Email Confirmation Code", $"New OTP: {otpCode}");
+
+            var mailRequest = new MailRequest
+            {
+                To = user.Email,
+                Subject = $"Your email confirmation code",
+                Body = $"{otpCode}"
+            };
+
+            _rabbitMqService.Publish("SendMail", mailRequest);
 
             return GenerateResponse<ApiResponse>(true, ErrorCode.Success, null);
         }
