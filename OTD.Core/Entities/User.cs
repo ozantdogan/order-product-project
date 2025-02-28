@@ -17,17 +17,20 @@ namespace OTD.Core.Entities
 
         [StringLength(101)] public string DisplayName { get; set; }
 
-        [Required]
+        [Required]        
         [StringLength(320)]
         public string Email { get; set; }
 
         public DateTime? LastLoginDate { get; set; }
 
         [Required]
-        public string PasswordHash { get; set; }
+        public byte[] PasswordHash { get; set; }
+
+        [Required]
+        public byte[] PasswordSalt { get; set; }
+
         public bool IsEmailConfirmed { get; set; } = false;
         public string? EmailConfirmationCode { get; set; }
         public DateTime? EmailConfirmationExpireDate { get; set; }
-
     }
 }

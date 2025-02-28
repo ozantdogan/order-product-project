@@ -10,7 +10,7 @@
     <PackageReference Include="Autofac" Version="8.2.0" />
     <PackageReference Include="AutoMapper" Version="13.0.1" />
     <PackageReference Include="MailKit" Version="4.8.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="7.0.20" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="7.0.10" />
     <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="6.0.36" />
     <PackageReference Include="MySqlConnector" Version="2.4.0" />
     <PackageReference Include="MySqlConnector.DependencyInjection" Version="2.4.0" />

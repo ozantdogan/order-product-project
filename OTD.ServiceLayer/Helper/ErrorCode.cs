@@ -7,7 +7,10 @@ public class ErrorCode
     public static ErrorCode NotFound = new ErrorCode("2", "Entity not found");
     public static ErrorCode EmailAlreadyInUse = new ErrorCode("3", "Email already in use.");
     public static ErrorCode EmailAlreadyConfirmed = new ErrorCode("4", "Email is already confirmed.");
-    public static ErrorCode OtpExpired = new ErrorCode("4", "One-time password has expired. Request a new one.");
+    public static ErrorCode EmailNotConfirmed = new ErrorCode("5", "Email not confirmed.");
+    public static ErrorCode EmailFormatValidationFailed = new ErrorCode("6", "Email is not in correct format.");
+    public static ErrorCode InvalidCredentials = new ErrorCode("7", "Email or password is not correct.");
+    public static ErrorCode OtpExpired = new ErrorCode("8", "One-time password has expired. Request a new one.");
 
     public ErrorCode(string code, string message)
     {
