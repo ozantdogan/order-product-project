@@ -37,7 +37,7 @@ namespace OTD.ServiceLayer.Concrete
             if(!emailFormatValidation)
                 return GenerateResponse<ApiResponse>(false, ErrorCode.EmailFormatValidationFailed, null);
 
-            var otpCode = GenerateOtp();
+            var confirmationCode = GenerateConfirmationCode();
             CreatePasswordHash(request.Password, out byte[] passwordHash, out byte[] passwordSalt);
 
             var user = new User
@@ -49,7 +49,7 @@ namespace OTD.ServiceLayer.Concrete
                 Email = request.Email,
                 PasswordHash = passwordHash,
                 PasswordSalt = passwordSalt,
-                EmailConfirmationCode = otpCode,
+                EmailConfirmationCode = confirmationCode,
                 EmailConfirmationExpireDate = DateTime.UtcNow.AddMinutes(10),
                 IsEmailConfirmed = false,
                 CreatedOn = DateTime.UtcNow,
@@ -64,7 +64,7 @@ namespace OTD.ServiceLayer.Concrete
             {
                 To = user.Email,
                 Subject = $"Your email confirmation code",
-                Body = $"{otpCode}"
+                Body = $"{confirmationCode}"
             };
 
             _rabbitMqService.Publish("SendMail", mailRequest);
@@ -82,7 +82,7 @@ namespace OTD.ServiceLayer.Concrete
             if (user.IsEmailConfirmed)
                 return GenerateResponse<ApiResponse>(false, ErrorCode.EmailAlreadyConfirmed, null);
 
-            if (user.EmailConfirmationExpireDate < DateTime.UtcNow || user.EmailConfirmationCode != request.Otp)
+            if (user.EmailConfirmationExpireDate < DateTime.UtcNow || user.EmailConfirmationCode != request.ConfirmationCode)
                 return GenerateResponse<ApiResponse>(false, ErrorCode.OtpNotValid, null);
 
             user.IsEmailConfirmed = true;
@@ -129,7 +129,7 @@ namespace OTD.ServiceLayer.Concrete
             return GenerateResponse(true, ErrorCode.Success, response);
         }
 
-        public async Task<ApiResponse> ResendOtp(ResendOtpRequest request)
+        public async Task<ApiResponse> ResendConfirmationCode(ResendOtpRequest request)
         {
             var emailFormatValidation = ValidationHelper.ValidateEmailFormat(request.Email);
             if (!emailFormatValidation)
@@ -143,7 +143,7 @@ namespace OTD.ServiceLayer.Concrete
             if (user.IsEmailConfirmed)
                 return GenerateResponse<ApiResponse>(false, ErrorCode.EmailAlreadyConfirmed, null);
 
-            var otpCode = GenerateOtp();
+            var otpCode = GenerateConfirmationCode();
             user.EmailConfirmationCode = otpCode;
             user.EmailConfirmationExpireDate = DateTime.UtcNow.AddMinutes(10);
 
@@ -161,7 +161,7 @@ namespace OTD.ServiceLayer.Concrete
             return GenerateResponse<ApiResponse>(true, ErrorCode.Success, null);
         }
 
-        private string GenerateOtp()
+        private string GenerateConfirmationCode()
         {
             Random random = new Random();
             return random.Next(100000,999999).ToString();

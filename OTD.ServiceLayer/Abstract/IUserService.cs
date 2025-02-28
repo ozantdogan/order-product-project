@@ -7,7 +7,7 @@ namespace OTD.ServiceLayer.Abstract
     {
         Task<ApiResponse> Register(RegisterRequest model);
         Task<ApiResponse> ConfirmEmail(ConfirmEmailRequest model);
-        Task<ApiResponse> ResendOtp(ResendOtpRequest model);
+        Task<ApiResponse> ResendConfirmationCode(ResendOtpRequest model);
         Task<ApiResponse> Login(LoginRequest model);
     }
 

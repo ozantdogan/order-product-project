@@ -43,7 +43,7 @@ namespace OTD.Core.Models.Requests
 
         [Required]
         [StringLength(6, MinimumLength = 6)]
-        public string Otp { get; set; }
+        public string ConfirmationCode { get; set; }
     }
 
     public class ResendOtpRequest

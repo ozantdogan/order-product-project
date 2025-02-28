@@ -1,10 +1,12 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using OTD.Core.Models.Requests;
 using OTD.ServiceLayer.Abstract;
 
 namespace OTD.Api.Controllers
 {
-    [Route("api/[controller]")]
+    [Authorize]
+    [Route("[controller]")]
     [ApiController]
     public class UserController : ControllerBase
     {
@@ -15,6 +17,7 @@ namespace OTD.Api.Controllers
             _service = userService;
         }
 
+        [AllowAnonymous]
         [HttpPost("Register")]
         public async Task<IActionResult> Register([FromBody] RegisterRequest request)
         {
@@ -22,6 +25,7 @@ namespace OTD.Api.Controllers
             return Ok(response);
         }
 
+        [AllowAnonymous]
         [HttpPost("ConfirmEmail")]
         public async Task<IActionResult> ConfirmEmail([FromBody] ConfirmEmailRequest request)
         {
@@ -29,6 +33,7 @@ namespace OTD.Api.Controllers
             return Ok(response);
         }
 
+        [AllowAnonymous]
         [HttpPost("Login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
@@ -36,10 +41,11 @@ namespace OTD.Api.Controllers
             return Ok(response);
         }
 
+        [AllowAnonymous]
         [HttpPost("ResendOtp")]
         public async Task<IActionResult> ResendOtp([FromBody] ResendOtpRequest request)
         {
-            var response = await _service.ResendOtp(request);
+            var response = await _service.ResendConfirmationCode(request);
             return Ok(response);
         }
     }

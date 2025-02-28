@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using OTD.Core.Models.Requests;
 using OTD.Core.Models.Responses;
 using OTD.Core.Models.SearchRequests;
@@ -6,6 +7,7 @@ using OTD.ServiceLayer.Abstract;
 
 namespace OTD.Api.Controllers
 {
+    [Authorize]
     [Route("[controller]")]
     [ApiController]
     public class OrderController : ControllerBase
