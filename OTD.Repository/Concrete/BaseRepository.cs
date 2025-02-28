@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using OTD.Core.Entities;
 using OTD.Repository.Abstract;
 using System.Linq.Expressions;
 
@@ -29,7 +30,11 @@ namespace OTD.Repository.Concrete
 
         public async Task<bool> Delete(T entity)
         {
-            _context.Entry(entity).State = EntityState.Deleted;
+            if (entity is BaseEntity baseEntity)
+            {
+                baseEntity.DeleteFlag = true;
+                _context.Entry(entity).State = EntityState.Modified;
+            }
             return await SaveChangesAsync();
         }
 
@@ -37,10 +42,15 @@ namespace OTD.Repository.Concrete
         {
             foreach (var entity in entities)
             {
-                _context.Entry(entity).State = EntityState.Deleted;
+                if (entity is BaseEntity baseEntity)
+                {
+                    baseEntity.DeleteFlag = true;
+                    _context.Entry(entity).State = EntityState.Modified;
+                }
             }
             return await SaveChangesAsync();
         }
+
 
         public async Task<T?> Get(Expression<Func<T, bool>> condition)
         {
