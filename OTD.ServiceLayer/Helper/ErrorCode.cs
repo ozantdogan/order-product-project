@@ -9,8 +9,9 @@ public class ErrorCode
     public static ErrorCode EmailAlreadyConfirmed = new ErrorCode("4", "Email is already confirmed.");
     public static ErrorCode EmailNotConfirmed = new ErrorCode("5", "Email not confirmed.");
     public static ErrorCode EmailFormatValidationFailed = new ErrorCode("6", "Email is not in correct format.");
-    public static ErrorCode InvalidCredentials = new ErrorCode("7", "Email or password is not correct.");
-    public static ErrorCode OtpNotValid = new ErrorCode("8", "One-time password has expired or is not valid. Request a new one.");
+    public static ErrorCode EmailOrPasswordNotCorrect = new ErrorCode("7", "Email or password is not correct.");
+    public static ErrorCode ConfirmationCodeNotValid = new ErrorCode("8", "Confirmation code has expired or is not valid. Request a new one.");
+    public static ErrorCode ExpiredRefreshToken = new ErrorCode("9", "Invalid or expired refresh token.");
 
     public ErrorCode(string code, string message)
     {

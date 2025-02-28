@@ -1,14 +1,12 @@
 ﻿using AutoMapper;
 using Microsoft.Extensions.Configuration;
 using OTD.Core.Entities;
-using OTD.Core.Helpers;
 using OTD.Core.Models;
 using OTD.Core.Models.Requests;
 using OTD.Core.Models.Responses;
 using OTD.Repository.Abstract;
 using OTD.ServiceLayer.Abstract;
 using OTD.ServiceLayer.Helper;
-using StackExchange.Redis;
 
 namespace OTD.ServiceLayer.Concrete
 {
@@ -18,29 +16,36 @@ namespace OTD.ServiceLayer.Concrete
         private readonly IRabbitMqService _rabbitMqService;
         private readonly IConfiguration _configuration;
         private readonly IMapper _mapper;
+        private readonly ICacheService _cache;
 
-        public UserService(IUserRepository repository, IRabbitMqService rabbitMqService, IConfiguration configuration, IMapper mapper)
+        public UserService(IUserRepository repository,
+            IRabbitMqService rabbitMqService,
+            IConfiguration configuration,
+            IMapper mapper,
+            ICacheService cache)
         {
             _repository = repository;
             _rabbitMqService = rabbitMqService;
             _configuration = configuration;
-            _mapper = mapper;   
+            _mapper = mapper;
+            _cache = cache;
         }
 
         public async Task<ApiResponse> Register(RegisterRequest request)
         {
-            var userAlreadyExists = (await _repository.List(p => p.Email == request.Email)).FirstOrDefault();
-            if (userAlreadyExists != null)
-                return GenerateResponse<ApiResponse>(false, ErrorCode.EmailAlreadyInUse, null);
+            var user = await _cache.GetAsync<User>($"{nameof(User)}-{request.Email}");
+            if (user == null)
+                user = (await _repository.List(p => p.Email == request.Email)).FirstOrDefault();
 
-            var emailFormatValidation = ValidationHelper.ValidateEmailFormat(request.Email);
-            if(!emailFormatValidation)
-                return GenerateResponse<ApiResponse>(false, ErrorCode.EmailFormatValidationFailed, null);
+            if (user != null)
+                return GenerateResponse<ApiResponse>(false, ErrorCode.EmailAlreadyInUse, null);
 
             var confirmationCode = GenerateConfirmationCode();
             CreatePasswordHash(request.Password, out byte[] passwordHash, out byte[] passwordSalt);
 
-            var user = new User
+            await _cache.SetCacheAsync($"confirmation-code:{request.Email}", confirmationCode, 10);
+
+            var newUser = new User
             {
                 UserId = Guid.NewGuid(),
                 FirstName = request.FirstName,
@@ -49,20 +54,18 @@ namespace OTD.ServiceLayer.Concrete
                 Email = request.Email,
                 PasswordHash = passwordHash,
                 PasswordSalt = passwordSalt,
-                EmailConfirmationCode = confirmationCode,
-                EmailConfirmationExpireDate = DateTime.UtcNow.AddMinutes(10),
                 IsEmailConfirmed = false,
                 CreatedOn = DateTime.UtcNow,
                 CreatedBy = null,
             };
 
-            await _repository.Add(user);
+            await _repository.Add(newUser);
 
-            var response = _mapper.Map<UserResponse>(user);
+            var response = _mapper.Map<UserResponse>(newUser);
 
             var mailRequest = new MailRequest
             {
-                To = user.Email,
+                To = newUser.Email,
                 Subject = $"Your email confirmation code",
                 Body = $"{confirmationCode}"
             };
@@ -74,22 +77,25 @@ namespace OTD.ServiceLayer.Concrete
 
         public async Task<ApiResponse> ConfirmEmail(ConfirmEmailRequest request)
         {
-            var user = (await _repository.List(p => p.Email == request.Email)).FirstOrDefault();
+            string cacheKey = $"confirmation-code:{request.Email}";
+            var cacheResult = await _cache.GetAsync<string>(cacheKey);
+            if (cacheResult == null || cacheResult != request.ConfirmationCode)
+                return GenerateResponse<ApiResponse>(false, ErrorCode.ConfirmationCodeNotValid, null);
 
-            if (user == null) 
+            var user = await _cache.GetAsync<User>($"{nameof(User)}-{request.Email}");
+            if (user == null)
+                user = (await _repository.List(p => p.Email == request.Email)).FirstOrDefault();
+
+            if (user == null)
                 return GenerateResponse<ApiResponse>(false, ErrorCode.NotFound, null);
 
             if (user.IsEmailConfirmed)
                 return GenerateResponse<ApiResponse>(false, ErrorCode.EmailAlreadyConfirmed, null);
 
-            if (user.EmailConfirmationExpireDate < DateTime.UtcNow || user.EmailConfirmationCode != request.ConfirmationCode)
-                return GenerateResponse<ApiResponse>(false, ErrorCode.OtpNotValid, null);
-
             user.IsEmailConfirmed = true;
-            user.EmailConfirmationCode = null;
-            user.EmailConfirmationExpireDate = null;
-
             await _repository.Update(user);
+
+            await _cache.RemoveCacheAsync($"confirmation-code:{request.Email}");
 
             var response = _mapper.Map<UserResponse>(user);
 
@@ -98,24 +104,30 @@ namespace OTD.ServiceLayer.Concrete
 
         public async Task<ApiResponse> Login(LoginRequest request)
         {
-            var emailFormatValidation = ValidationHelper.ValidateEmailFormat(request.Email);
-            if(!emailFormatValidation)
-                return GenerateResponse<ApiResponse>(false, ErrorCode.EmailFormatValidationFailed, null);
-
-            var user = (await _repository.List(p => p.Email == request.Email)).FirstOrDefault();
+            var user = await _cache.GetAsync<User>($"{nameof(User)}-{request.Email}");
             if (user == null)
-                return GenerateResponse<ApiResponse>(false, ErrorCode.InvalidCredentials, null);
+                user = (await _repository.List(p => p.Email == request.Email)).FirstOrDefault();
+
+            if (user == null)
+                return GenerateResponse<ApiResponse>(false, ErrorCode.EmailOrPasswordNotCorrect, null);
 
             if (!VerifyPassword(request.Password, user.PasswordHash, user.PasswordSalt))
-                return GenerateResponse<ApiResponse>(false, ErrorCode.InvalidCredentials, null);
+                return GenerateResponse<ApiResponse>(false, ErrorCode.EmailOrPasswordNotCorrect, null);
 
             if (!user.IsEmailConfirmed)
                 return GenerateResponse<ApiResponse>(false, ErrorCode.EmailNotConfirmed, null);
 
-            var token = GenerateJwtToken(user);
+            var accessToken = GenerateJwtToken(user);
+            var refreshToken = GenerateRefreshToken();
+
+            var cacheKey = $"{nameof(User)}-{user.Email}";
+            await _cache.SetCacheAsync(cacheKey, user, 60);
+            await _cache.SetCacheAsync($"refresh-token:{refreshToken}", user.UserId, 7);
+
             var response = new LoginResponse()
             {
-                AuthToken = token,
+                AccessToken = accessToken,
+                RefreshToken = refreshToken,
                 AccessTokenExpireDate = DateTime.UtcNow.AddHours(1),
                 UserId = user.UserId,
                 FirstName = user.FirstName,
@@ -129,23 +141,21 @@ namespace OTD.ServiceLayer.Concrete
             return GenerateResponse(true, ErrorCode.Success, response);
         }
 
-        public async Task<ApiResponse> ResendConfirmationCode(ResendOtpRequest request)
+        public async Task<ApiResponse> ResendConfirmationCode(ResendConfirmationCodeRequest request)
         {
-            var emailFormatValidation = ValidationHelper.ValidateEmailFormat(request.Email);
-            if (!emailFormatValidation)
-                return GenerateResponse<ApiResponse>(false, ErrorCode.EmailFormatValidationFailed, null);
-
-            var user = (await _repository.List(p => p.Email == request.Email)).FirstOrDefault();
+            var user = await _cache.GetAsync<User>($"{nameof(User)}-{request.Email}");
+            if (user == null)
+                user = (await _repository.List(p => p.Email == request.Email)).FirstOrDefault();
 
             if (user == null)
-                return GenerateResponse<ApiResponse>(false, ErrorCode.InvalidCredentials, null);
+                return GenerateResponse<ApiResponse>(false, ErrorCode.EmailOrPasswordNotCorrect, null);
 
             if (user.IsEmailConfirmed)
                 return GenerateResponse<ApiResponse>(false, ErrorCode.EmailAlreadyConfirmed, null);
 
-            var otpCode = GenerateConfirmationCode();
-            user.EmailConfirmationCode = otpCode;
-            user.EmailConfirmationExpireDate = DateTime.UtcNow.AddMinutes(10);
+            var confirmationCode = GenerateConfirmationCode();
+
+            await _cache.SetCacheAsync($"confirmation-code:{request.Email}", confirmationCode, 10);
 
             await _repository.Update(user);
 
@@ -153,7 +163,7 @@ namespace OTD.ServiceLayer.Concrete
             {
                 To = user.Email,
                 Subject = $"Your email confirmation code",
-                Body = $"{otpCode}"
+                Body = $"{confirmationCode}"
             };
 
             _rabbitMqService.Publish("SendMail", mailRequest);
@@ -161,10 +171,39 @@ namespace OTD.ServiceLayer.Concrete
             return GenerateResponse<ApiResponse>(true, ErrorCode.Success, null);
         }
 
+        public async Task<ApiResponse> RefreshToken(RefreshTokenRequest request)
+        {
+            var isBlacklisted = await _cache.GetAsync<bool>($"blacklisted-refresh-token:{request.RefreshToken}");
+            if (isBlacklisted)
+                return GenerateResponse<ApiResponse>(false, ErrorCode.ExpiredRefreshToken, null);
+
+            var userId = await _cache.GetAsync<Guid?>($"refresh-token:{request.RefreshToken}");
+            if (userId == null)
+                return GenerateResponse<ApiResponse>(false, ErrorCode.ExpiredRefreshToken, null);
+
+            var user = (await _repository.List(p => p.UserId == userId.Value)).FirstOrDefault();
+            if (user == null)
+                return GenerateResponse<ApiResponse>(false, ErrorCode.NotFound, null);
+
+            var newAccessToken = GenerateJwtToken(user);
+            var newRefreshToken = GenerateRefreshToken();
+
+            await _cache.SetCacheAsync($"blacklisted-refresh-token:{request.RefreshToken}", true, 7);
+            await _cache.SetCacheAsync($"refresh-token:{newRefreshToken}", user.UserId, 7);
+
+            var response = new RefreshTokenResponse()
+            {
+                AccessToken = newAccessToken,
+                RefreshToken = newRefreshToken
+            };
+
+            return GenerateResponse(true, ErrorCode.Success, response);
+        }
+
         private string GenerateConfirmationCode()
         {
             Random random = new Random();
-            return random.Next(100000,999999).ToString();
+            return random.Next(100000, 999999).ToString();
         }
 
         private bool VerifyPassword(string enteredPassword, byte[] storedHash, byte[] storedSalt)
@@ -205,5 +244,16 @@ namespace OTD.ServiceLayer.Concrete
                 passwordHash = hmac.ComputeHash(System.Text.Encoding.UTF8.GetBytes(password));
             }
         }
+
+        private string GenerateRefreshToken()
+        {
+            var randomBytes = new byte[32];
+            using (var rng = new System.Security.Cryptography.RNGCryptoServiceProvider())
+            {
+                rng.GetBytes(randomBytes);
+            }
+            return Convert.ToBase64String(randomBytes);
+        }
+
     }
 }

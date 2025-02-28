@@ -42,8 +42,16 @@ namespace OTD.Api.Controllers
         }
 
         [AllowAnonymous]
-        [HttpPost("ResendOtp")]
-        public async Task<IActionResult> ResendOtp([FromBody] ResendOtpRequest request)
+        [HttpPost("Refresh")]
+        public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequest request)
+        {
+            var response = await _service.RefreshToken(request);
+            return Ok(response);
+        }
+
+        [AllowAnonymous]
+        [HttpPost("ResendConfirmationCode")]
+        public async Task<IActionResult> ResendConfirmationCode([FromBody] ResendConfirmationCodeRequest request)
         {
             var response = await _service.ResendConfirmationCode(request);
             return Ok(response);

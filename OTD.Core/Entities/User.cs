@@ -30,7 +30,5 @@ namespace OTD.Core.Entities
         public byte[] PasswordSalt { get; set; }
 
         public bool IsEmailConfirmed { get; set; } = false;
-        public string? EmailConfirmationCode { get; set; }
-        public DateTime? EmailConfirmationExpireDate { get; set; }
     }
 }

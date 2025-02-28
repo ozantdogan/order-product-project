@@ -46,11 +46,16 @@ namespace OTD.Core.Models.Requests
         public string ConfirmationCode { get; set; }
     }
 
-    public class ResendOtpRequest
+    public class ResendConfirmationCodeRequest
     {
         [Required]
         [EmailAddress]
         [StringLength(320)]
         public string Email { get; set; }
+    }
+
+    public class RefreshTokenRequest
+    {
+        public string RefreshToken { get; set; }
     }
 }
