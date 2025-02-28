@@ -250,7 +250,6 @@ namespace OTD.ServiceLayer.Concrete
             return tokenHandler.WriteToken(token);
         }
 
-
         private void CreatePasswordHash(string password, out byte[] passwordHash, out byte[] passwordSalt)
         {
             using (var hmac = new System.Security.Cryptography.HMACSHA512())
@@ -269,6 +268,5 @@ namespace OTD.ServiceLayer.Concrete
             }
             return Convert.ToBase64String(randomBytes);
         }
-
     }
 }
