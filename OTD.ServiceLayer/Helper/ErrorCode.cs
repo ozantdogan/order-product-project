@@ -10,7 +10,7 @@ public class ErrorCode
     public static ErrorCode EmailNotConfirmed = new ErrorCode("5", "Email not confirmed.");
     public static ErrorCode EmailFormatValidationFailed = new ErrorCode("6", "Email is not in correct format.");
     public static ErrorCode InvalidCredentials = new ErrorCode("7", "Email or password is not correct.");
-    public static ErrorCode OtpExpired = new ErrorCode("8", "One-time password has expired. Request a new one.");
+    public static ErrorCode OtpNotValid = new ErrorCode("8", "One-time password has expired or is not valid. Request a new one.");
 
     public ErrorCode(string code, string message)
     {

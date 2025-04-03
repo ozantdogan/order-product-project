@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using OTD.Core.Entities;
+using OTD.Core.Models;
 using OTD.Core.Models.Responses;
 
 namespace OTD.Core
@@ -10,6 +11,7 @@ namespace OTD.Core
         { 
             CreateMap<Product, ProductResponse>();
             CreateMap<Order, OrderResponse>();
+            CreateMap<User, UserResponse>();
         }
     }
 }

@@ -4,7 +4,7 @@ namespace OTD.Core.Helpers
 {
     public static class ValidationHelper
     {
-        public static bool ValidateEmail(string email)
+        public static bool ValidateEmailFormat(string email)
         {
             if (string.IsNullOrWhiteSpace(email))
                 return false;

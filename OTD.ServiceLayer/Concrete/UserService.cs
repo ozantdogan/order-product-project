@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using AutoMapper;
+using Microsoft.Extensions.Configuration;
 using OTD.Core.Entities;
 using OTD.Core.Helpers;
 using OTD.Core.Models;
@@ -15,12 +16,14 @@ namespace OTD.ServiceLayer.Concrete
         private readonly IUserRepository _repository;
         private readonly IMailService _mailService;
         private readonly IConfiguration _configuration;
+        private readonly IMapper _mapper;
 
-        public UserService(IUserRepository repository, IMailService mailService, IConfiguration configuration)
+        public UserService(IUserRepository repository, IMailService mailService, IConfiguration configuration, IMapper mapper)
         {
             _repository = repository;
             _mailService = mailService;
             _configuration = configuration;
+            _mapper = mapper;   
         }
 
         public async Task<ApiResponse> Register(RegisterRequest request)
@@ -29,8 +32,8 @@ namespace OTD.ServiceLayer.Concrete
             if (userAlreadyExists != null)
                 return GenerateResponse<ApiResponse>(false, ErrorCode.EmailAlreadyInUse, null);
 
-            var emailValidation = ValidationHelper.ValidateEmail(request.Email);
-            if(!emailValidation)
+            var emailFormatValidation = ValidationHelper.ValidateEmailFormat(request.Email);
+            if(!emailFormatValidation)
                 return GenerateResponse<ApiResponse>(false, ErrorCode.EmailFormatValidationFailed, null);
 
             var otpCode = GenerateOtp();
@@ -41,19 +44,24 @@ namespace OTD.ServiceLayer.Concrete
                 UserId = Guid.NewGuid(),
                 FirstName = request.FirstName,
                 LastName = request.LastName,
+                DisplayName = request.FirstName + " " + request.LastName,
                 Email = request.Email,
                 PasswordHash = passwordHash,
                 PasswordSalt = passwordSalt,
                 EmailConfirmationCode = otpCode,
                 EmailConfirmationExpireDate = DateTime.UtcNow.AddMinutes(10),
-                IsEmailConfirmed = false
+                IsEmailConfirmed = false,
+                CreatedOn = DateTime.UtcNow,
+                CreatedBy = null,
             };
 
             await _repository.Add(user);
 
+            var response = _mapper.Map<UserResponse>(user);
+
             await _mailService.SendEmailAsync(user.Email, "Email Confirmation Code", $"One time password: {otpCode}");
 
-            return GenerateResponse(true, ErrorCode.Success, user);
+            return GenerateResponse(true, ErrorCode.Success, response);
         }
 
         public async Task<ApiResponse> ConfirmEmail(ConfirmEmailRequest request)
@@ -66,8 +74,8 @@ namespace OTD.ServiceLayer.Concrete
             if (user.IsEmailConfirmed)
                 return GenerateResponse<ApiResponse>(false, ErrorCode.EmailAlreadyConfirmed, null);
 
-            if (user.EmailConfirmationExpireDate < DateTime.UtcNow)
-                return GenerateResponse<ApiResponse>(false, ErrorCode.OtpExpired, null);
+            if (user.EmailConfirmationExpireDate < DateTime.UtcNow || user.EmailConfirmationCode != request.Otp)
+                return GenerateResponse<ApiResponse>(false, ErrorCode.OtpNotValid, null);
 
             user.IsEmailConfirmed = true;
             user.EmailConfirmationCode = null;
@@ -80,19 +88,19 @@ namespace OTD.ServiceLayer.Concrete
 
         public async Task<ApiResponse> Login(LoginRequest request)
         {
-            var emailValidation = ValidationHelper.ValidateEmail(request.Email);
-            if(!emailValidation)
+            var emailFormatValidation = ValidationHelper.ValidateEmailFormat(request.Email);
+            if(!emailFormatValidation)
                 return GenerateResponse<ApiResponse>(false, ErrorCode.EmailFormatValidationFailed, null);
 
             var user = (await _repository.List(p => p.Email == request.Email)).FirstOrDefault();
             if (user == null)
-                return GenerateResponse<ApiResponse>(false, ErrorCode.NotFound, null);
-
-            if (!user.IsEmailConfirmed)
-                return GenerateResponse<ApiResponse>(false, ErrorCode.EmailNotConfirmed, null);
+                return GenerateResponse<ApiResponse>(false, ErrorCode.InvalidCredentials, null);
 
             if (!VerifyPassword(request.Password, user.PasswordHash, user.PasswordSalt))
                 return GenerateResponse<ApiResponse>(false, ErrorCode.InvalidCredentials, null);
+
+            if (!user.IsEmailConfirmed)
+                return GenerateResponse<ApiResponse>(false, ErrorCode.EmailNotConfirmed, null);
 
             var token = GenerateJwtToken(user);
             var response = new LoginResponse()
@@ -105,15 +113,22 @@ namespace OTD.ServiceLayer.Concrete
                 Email = user.Email
             };
 
+            user.LastLoginDate = DateTime.UtcNow;
+            await _repository.Update(user);
+
             return GenerateResponse(true, ErrorCode.Success, response);
         }
 
         public async Task<ApiResponse> ResendOtp(ResendOtpRequest request)
         {
+            var emailFormatValidation = ValidationHelper.ValidateEmailFormat(request.Email);
+            if (!emailFormatValidation)
+                return GenerateResponse<ApiResponse>(false, ErrorCode.EmailFormatValidationFailed, null);
+
             var user = (await _repository.List(p => p.Email == request.Email)).FirstOrDefault();
 
             if (user == null)
-                return GenerateResponse<ApiResponse>(false, ErrorCode.NotFound, null);
+                return GenerateResponse<ApiResponse>(false, ErrorCode.InvalidCredentials, null);
 
             if (user.IsEmailConfirmed)
                 return GenerateResponse<ApiResponse>(false, ErrorCode.EmailAlreadyConfirmed, null);
@@ -142,7 +157,6 @@ namespace OTD.ServiceLayer.Concrete
                 return computedHash.SequenceEqual(storedHash);
             }
         }
-
 
         private string GenerateJwtToken(User user)
         {
